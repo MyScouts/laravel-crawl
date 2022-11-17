@@ -107,8 +107,8 @@ class CrawlController extends Controller
         );
 
         foreach ($inputs as $input) {
-            $result =  $this->callAPI($input);
-            if (!is_null($result))  $data[] = $result;
+            $result = $this->callAPI($input);
+            if (!is_null($result)) $data[] = $result;
         }
 
         $export = new CrawlExport($data);
@@ -125,6 +125,7 @@ class CrawlController extends Controller
             'started_date'  => $startTask
         ]);
 
-        return Excel::download($export, CrawlHistory::FILE_NAME);
+        // return Excel::download($export, CrawlHistory::FILE_NAME);
+        return back()->with(['message' => 'Crawl is successfully!']);
     }
 }

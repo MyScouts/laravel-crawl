@@ -25,10 +25,10 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $lastCrawl = CrawlHistory::select('finished_date')->latest()->first();
+        $lastCrawl = CrawlHistory::select('finished_date', 'file')->latest()->first();
 
         $crawls = CrawlHistory::orderBy('started_date', 'DESC')
-            ->paginate(5);
+            ->paginate(10);
 
         return view('home', compact('lastCrawl', 'crawls'));
     }

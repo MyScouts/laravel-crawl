@@ -5,12 +5,20 @@
         <div class="card">
             <div class="card-header">
                 <div class="row justify-content-between align-items-center">
-                    <div class="col-6">
-                        <span class="h3 font-bold"><strong>Crawl History</strong></span>
+                    <div class="col-4">
+                        <span class="h5 font-bold"><strong>Crawl History</strong></span>
                     </div>
-                    <div class="col-6 text-right">
-                        <span class="mr-2 inline-block">Last date: {{ $lastCrawl->finished_date ?? 'empty' }}</span>
-                        <a href="{{ route('crawlData') }}" class="btn btn-danger">CRAWL</a>
+                    <div class="col-8 col-reserver text-right">
+                        <span class="mr-2 inline-block">Last date:
+                            @if (isset($lastCrawl->finished_date))
+                                <a href="{{ route('downloadFile', ['file' => $lastCrawl->file]) }}">
+                                    {{ $lastCrawl->finished_date }}
+                                </a>
+                            @else
+                                empty
+                            @endif
+                        </span>
+                        <a href="{{ route('crawlData') }}" class="btn btn-danger"><strong>CRAWL</strong></a>
                     </div>
                 </div>
             </div>
@@ -29,22 +37,32 @@
                     </thead>
 
                     <tbody>
-                        @foreach ($crawls as $index => $crawl)
+                        @if (isset($crawls) && count($crawls) > 0)
+                            @foreach ($crawls as $index => $crawl)
+                                <tr class="text-center">
+                                    <td>{{ ($crawls->currentPage() - 1) * $crawls->perPage() + $index + 1 }}</td>
+                                    <td>{{ $crawl->task_done }}</td>
+                                    <td>{{ $crawl->total_task - $crawl->task_done }}</td>
+                                    <td>{{ $crawl->total_task }}</td>
+                                    <td>{{ $crawl->started_date }}</td>
+                                    <td>{{ $crawl->finished_date }}</td>
+                                    <td>
+                                        <a href="{{ route('downloadFile', ['file' => $crawl->file]) }}">Download file</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
                             <tr class="text-center">
-                                <td>{{ ($crawls->currentPage() - 1) * $crawls->perPage() + $index + 1 }}</td>
-                                <td>{{ $crawl->task_done }}</td>
-                                <td>{{ $crawl->total_task - $crawl->task_done }}</td>
-                                <td>{{ $crawl->total_task }}</td>
-                                <td>{{ $crawl->started_date }}</td>
-                                <td>{{ $crawl->finished_date }}</td>
-                                <td><a href="{{ route('downloadFile', ['file' => $crawl->file]) }}">Download file</a></td>
+                                <td colspan="7">Data not found!</td>
                             </tr>
-                        @endforeach
+                        @endif
                     </tbody>
                 </table>
             </div>
             <div class="card-footer text-muted">
-                {!! $crawls->links() !!}
+                @if (isset($crawls) && count($crawls) > 0)
+                    {!! $crawls->links() !!}
+                @endif
             </div>
         </div>
     </div>
