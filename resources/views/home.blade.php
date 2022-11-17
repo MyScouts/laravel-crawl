@@ -9,7 +9,7 @@
                         <span class="h5 font-bold"><strong>Crawl History</strong></span>
                     </div>
                     <div class="col-8 col-reserver text-right">
-                        <span class="mr-2 inline-block">Last date:
+                        <span class="mr-2 inline-block">Lastest:
                             @if (isset($lastCrawl->finished_date))
                                 <a href="{{ route('downloadFile', ['file' => $lastCrawl->file]) }}">
                                     {{ $lastCrawl->finished_date }}
