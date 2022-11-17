@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,8 +25,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        PendingRequest::macro('adequateshop', function () {
-            return PendingRequest::hasMacro('');
-        });
+        Paginator::useBootstrap();
     }
 }

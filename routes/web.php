@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CrawlController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UploadFileController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,7 @@ Route::redirect('', 'home');
 Route::group([
     'middleware' => 'auth'
 ], function () {
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
-    Route::get('/crawl-data', [CrawlController::class, 'onCrawl'])->name('crawlData');
+    Route::get('/home',         [HomeController::class, 'index'])->name('home');
+    Route::get('/crawl-data',   [CrawlController::class, 'onCrawl'])->name('crawlData');
+    Route::get('/download',     [UploadFileController::class, 'download'])->name('downloadFile');
 });

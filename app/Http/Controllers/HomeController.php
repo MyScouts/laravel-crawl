@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CrawlHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -24,8 +25,11 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $key = "total-crawl";
-        $totalCrawl = 100 - intval(Cache::get($key, 0));
-        return view('home', compact('totalCrawl'));
+        $lastCrawl = CrawlHistory::select('finished_date')->latest()->first();
+
+        $crawls = CrawlHistory::orderBy('started_date', 'DESC')
+            ->paginate(5);
+
+        return view('home', compact('lastCrawl', 'crawls'));
     }
 }

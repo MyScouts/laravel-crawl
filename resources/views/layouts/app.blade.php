@@ -80,12 +80,12 @@
         <main class="py-4">
             <div class="container">
                 @if (session()->has('message'))
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger mb-4">
                         {{ session('message') }}
                     </div>
                 @endif
+                @yield('content')
             </div>
-            @yield('content')
         </main>
     </div>
 </body>
