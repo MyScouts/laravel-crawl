@@ -7,6 +7,8 @@ use App\Jobs\CrawlUrlJob;
 use App\Jobs\VerifyErrorUrlJob;
 use App\Models\CrawlHistory;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Request;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +40,7 @@ class CrawlDaily extends Command
      */
     public function handle()
     {
+        Log::info("CrawlDaily");
         $startTask = Carbon::now();
         $urlCrawl = $this->initUrl();
         $urlCrawl = array_slice($urlCrawl, 0, 100);
@@ -127,5 +130,31 @@ class CrawlDaily extends Command
         }
 
         CrawlHistory::where('id', $historyId)->update($dataUpdate);
+    }
+
+    /**
+     * initUrl
+     *
+     * @return array
+     */
+    private function initUrl()
+    {
+        try {
+            $dataUrl = "https://www.leasinger.de/todolist/1";
+
+            $client = new Client(['allow_redirects' => ['track_redirects' => true]]);
+
+            $request = new Request('GET', $dataUrl);
+            $res = $client->sendAsync($request)->wait();
+
+            $htmlStr = strip_tags($res->getBody()->getContents());
+
+            return explode("\n", $htmlStr);
+        } catch (\Throwable $th) {
+            Log::error("CrawlController ::: initUrl", [
+                'message' => $th->getMessage()
+            ]);
+        }
+        return [];
     }
 }
