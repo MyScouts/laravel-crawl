@@ -47,8 +47,7 @@ class CrawlHelper
             'Connection'                => 'keep-alive'
         ];
 
-        $client = new Client(['allow_redirects' => ['track_redirects' => true]]);
-
+        $client = new Client(['allow_redirects' => ['track_redirects' => true], 'verify' => false]);
         $request = new Request('GET', $url, $headers);
         $res = $client->sendAsync($request)->wait();
 

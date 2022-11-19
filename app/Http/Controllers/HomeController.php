@@ -28,12 +28,8 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $job = DB::table("job_batches")->latest()->first();
-        try {
-            $bus = Bus::findBatch($job->id);
-        } catch (\Throwable $th) {
-            $bus = null;
-        }
+        $job = JobBatch::latest()->first();
+
         $lastCrawl = CrawlHistory::select('finished_date', 'file')
             ->whereNotNull('finished_date')
             ->latest()
@@ -41,17 +37,12 @@ class HomeController extends Controller
         $crawls = CrawlHistory::whereNotNull('finished_date')
             ->orderBy('started_date', 'DESC')
             ->paginate(10);
-        return view('home', compact('lastCrawl', 'crawls', 'job', 'bus'));
+        return view('home', compact('lastCrawl', 'crawls', 'job'));
     }
 
     public function getStatus()
     {
-        $job = DB::table("job_batches")->latest()->first();
-        try {
-            $bus = Bus::findBatch($job->id);
-            return response()->json(['data' => $bus]);
-        } catch (\Throwable $th) {
-            return response()->json(['data' => null]);
-        }
+        $job = JobBatch::latest()->first();
+        return response()->json(['data' => $job]);
     }
 }

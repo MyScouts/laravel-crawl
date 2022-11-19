@@ -92,51 +92,66 @@
 @endsection
 
 @section('script-footer')
-    @if ($bus && !$bus->finishedAt)
-        <script>
-            getStatus();
-            const handleProcess = setInterval(() => getStatus(), 2500);
+    @if (isset($job))
+        @php
+            $completed = $job->total_jobs - $job->pending_jobs + $job->failed_jobs;
+        @endphp
+        @if ($completed < $job->total_jobs)
+            <script>
+                getStatus();
+                const handleProcess = setInterval(() => getStatus(), 2500);
 
-            function getStatus() {
-                $.ajax({
-                    type: 'get',
-                    url: '{{ route('getStatus') }}',
-                    success: function(data) {
-                        const job = data.data;
-                        if (job) {
-                            const process = job.progress;
-                            let processHtml = "";
-                            if (process === 100) {
-                                clearInterval(handleProcess);
-                                processHtml = `
-                                    <div class="alert alert-primary alert-dismissible fade show mb-4" role="alert">
-                                        Crawl data completed
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                    </div>
-                                    `
-                                setTimeout(() => location.reload(), 500);
-                            } else {
-                                processHtml = `<div class="card p-3 mb-4">
-                                    <div>
-                                        <div class="d-flex justify-content-between">
-                                            <div>${job.name}</div>
-                                            <div>Total jobs: ${job.processedJobs}/${job.totalJobs}</div>
-                                        </div>
-                                        <div class="progress">
-                                            <div class="progress-bar" role="progressbar" style="width: ${process}%;" aria-valuenow="${process}" aria-valuemin="0"
-                                                aria-valuemax="100">
-                                                ${process}%
-                                            </div>
-                                        </div>
-                                     </div>
-                                </div>`;
+                function getStatus() {
+                    $.ajax({
+                        type: 'get',
+                        url: '{{ route('getStatus') }}',
+                        success: function(data) {
+                            const job = data.data;
+                            if (job) {
+                                let process = 0;
+                                const totalJobs = job.total_jobs;
+                                const pendingJobs = job.pending_jobs;
+                                const failedJob = job.failed_jobs;
+                                const completedJobs = totalJobs - pendingJobs + failedJob;
+                                process = (completedJobs / totalJobs * 100).toFixed(0);
+                                if (pendingJobs === 0) {
+                                    process = 100;
+                                }
+
+                                let processHtml = "";
+                                if (process >= 100) {
+                                    clearInterval(handleProcess);
+                                    processHtml = `
+                                                    <div class="alert alert-primary alert-dismissible fade show mb-4" role="alert">
+                                                        Crawl data completed
+                                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                    </div>
+                                                        `
+                                    setTimeout(() => location.reload(), 500);
+
+                                } else {
+                                    processHtml = `<div class="card p-3 mb-4">
+                                                    <div>
+                                                        <div class="d-flex justify-content-between">
+                                                            <div>${job.name}</div>
+                                                            <div>Total jobs: ${completedJobs}/${totalJobs}</div>
+                                                        </div>
+                                                        <div class="progress">
+                                                            <div class="progress-bar" role="progressbar" style="width: ${process}%;" aria-valuenow="${process}" aria-valuemin="0"
+                                                                aria-valuemax="100">
+                                                                ${process}%
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>`;
+                                }
+
+                                $('#home-status').html(processHtml);
                             }
-
-                            $('#home-status').html(processHtml);
                         }
-                    }
-                });
-            }
-        </script>
+                    });
+                }
+            </script>
+        @endif
     @endif
 @endsection

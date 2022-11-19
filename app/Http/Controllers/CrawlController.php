@@ -7,6 +7,7 @@ use App\Jobs\CrawlUrlJob;
 use App\Jobs\VerifyErrorUrlJob;
 use App\Models\CrawlHistory;
 use Carbon\Carbon;
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
 use Illuminate\Bus\Batch;
@@ -22,23 +23,15 @@ class CrawlController extends Controller
 
     private function initUrl()
     {
-        try {
-            $dataUrl = "https://www.leasinger.de/todolist/1";
+        $dataUrl = "https://www.leasinger.de/todolist/1";
 
-            $client = new Client(['allow_redirects' => ['track_redirects' => true]]);
+        $client = new Client(['allow_redirects' => ['track_redirects' => true], 'verify' => false]);
 
-            $request = new Request('GET', $dataUrl);
-            $res = $client->sendAsync($request)->wait();
+        $request = new Request('GET', $dataUrl);
+        $res = $client->sendAsync($request)->wait();
 
-            $htmlStr = strip_tags($res->getBody()->getContents());
-
-            return explode("\n", $htmlStr);
-        } catch (\Throwable $th) {
-            Log::error("CrawlController ::: initUrl", [
-                'message' => $th->getMessage()
-            ]);
-        }
-        return [];
+        $htmlStr = strip_tags($res->getBody()->getContents());
+        return explode("\n", $htmlStr);
     }
 
     /**
@@ -48,35 +41,39 @@ class CrawlController extends Controller
      */
     public function onCrawl()
     {
-        $startTask = Carbon::now();
-        $urlCrawl = $this->initUrl();
-        $urlCrawl = array_slice($urlCrawl, 0, 5000);
-        $history = CrawlHistory::create([
-            'total_task'    => count($urlCrawl),
-            'started_date'  => $startTask
-        ]);
-        if (count($urlCrawl) > 0) {
-            foreach ($urlCrawl as $url) {
-                $url = substr($url, strpos($url, ';') + 1);
-                $jobs[] = new CrawlUrlJob($url, $history->id);
+        try {
+            $startTask = Carbon::now();
+            $urlCrawl = $this->initUrl();
+            $urlCrawl = array_slice($urlCrawl, 0, 500);
+            $history = CrawlHistory::create([
+                'total_task'    => count($urlCrawl),
+                'started_date'  => $startTask
+            ]);
+            if (count($urlCrawl) > 0) {
+                foreach ($urlCrawl as $url) {
+                    $url = substr($url, strpos($url, ';') + 1);
+                    $jobs[] = new CrawlUrlJob($url, $history->id);
+                }
+
+                Bus::batch($jobs)
+                    ->name('Processing crawl data form url')
+                    ->finally(function () use ($history) {
+                        $historyId = $history->id;
+                        $crawlHistory = CrawlHistory::find($historyId);
+                        // processing job is completed
+                        if ($crawlHistory->task_done == $crawlHistory->total_task) {
+                            return $this->handleCompletedJob($historyId);
+                        }
+                        return $this->handleHasErrorJobs($historyId);
+                    })
+                    ->dispatch();
+                return back()->with(['message' => 'Crawl is processing!']);
             }
 
-            Bus::batch($jobs)
-                ->name('Processing crawl data form url')
-                ->finally(function () use ($history) {
-                    $historyId = $history->id;
-                    $crawlHistory = CrawlHistory::find($historyId);
-                    // processing job is completed
-                    if ($crawlHistory->task_done == $crawlHistory->total_task) {
-                        return $this->handleCompletedJob($historyId);
-                    }
-                    return $this->handleHasErrorJobs($historyId);
-                })
-                ->dispatch();
-            return back()->with(['message' => 'Crawl is processing!']);
+            return back()->with(['message' => 'Not found urls for crawl!']);
+        } catch (\Throwable $th) {
+            return back()->with(['message' => $th->getMessage()]);
         }
-
-        return back()->with(['message' => 'Not found urls for crawl!']);
     }
 
     /**
@@ -167,7 +164,6 @@ class CrawlController extends Controller
                 ->dispatch();
             return back()->with(['message' => 'Crawl is processing!']);
         }
-
         return back()->with(['message' => 'Not found urls for crawl!']);
     }
 }
