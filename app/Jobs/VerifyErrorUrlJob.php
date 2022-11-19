@@ -71,7 +71,10 @@ class VerifyErrorUrlJob implements ShouldQueue
         Storage::put($fileUrl, json_encode($content));
         $crawlHistory = CrawlHistory::find($this->historyId);
         CrawlHistory::where('id', $this->historyId)
-            ->update(['task_fail' => $crawlHistory->task_fail - 1]);
+            ->update([
+                'task_fail' => $crawlHistory->task_fail - 1,
+                'task_done' => $crawlHistory->task_done + 1
+            ]);
     }
 
     /**
