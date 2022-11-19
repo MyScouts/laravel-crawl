@@ -13,6 +13,33 @@ use Illuminate\Support\Facades\Storage;
 class UploadHelper
 {
 
+    /**
+     * appendContent
+     *
+     * @param  mixed $path
+     * @param  mixed $content
+     * @return void
+     */
+    public static function appendContent(string $path, string $content): void
+    {
+        if (!Storage::exists($path)) {
+            Storage::put($path, $content);
+            return;
+        }
+
+        Storage::append($path, $content);
+        return;
+    }
+
+
+    /**
+     * createFile
+     *
+     * @param  mixed $content
+     * @param  mixed $path
+     * @param  mixed $fileName
+     * @return ?string
+     */
     public static function createFile($content, $path, $fileName): ?string
     {
         try {

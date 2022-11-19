@@ -26,6 +26,7 @@ Route::group([
     'middleware' => 'auth'
 ], function () {
     Route::get('/home',         [HomeController::class, 'index'])->name('home');
+    Route::get('/get-status',   [HomeController::class, 'getStatus'])->name('getStatus');
     Route::get('/crawl-data',   [CrawlController::class, 'onCrawl'])->name('crawlData');
     Route::get('/download',     [UploadFileController::class, 'download'])->name('downloadFile');
 });

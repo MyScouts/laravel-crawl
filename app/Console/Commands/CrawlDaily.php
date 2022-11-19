@@ -1,52 +1,42 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Console\Commands;
 
 use App\Exports\CrawlExport;
 use App\Jobs\CrawlUrlJob;
 use App\Jobs\VerifyErrorUrlJob;
 use App\Models\CrawlHistory;
 use Carbon\Carbon;
-use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\Request;
-use Illuminate\Bus\Batch;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-use Throwable;
 
-class CrawlController extends Controller
+class CrawlDaily extends Command
 {
-
-
-    private function initUrl()
-    {
-        try {
-            $dataUrl = "https://www.leasinger.de/todolist/1";
-
-            $client = new Client(['allow_redirects' => ['track_redirects' => true]]);
-
-            $request = new Request('GET', $dataUrl);
-            $res = $client->sendAsync($request)->wait();
-
-            $htmlStr = strip_tags($res->getBody()->getContents());
-
-            return explode("\n", $htmlStr);
-        } catch (\Throwable $th) {
-            Log::error("CrawlController ::: initUrl", [
-                'message' => $th->getMessage()
-            ]);
-        }
-        return [];
-    }
+    const SETTING_KEY = 'crawl_daily';
 
     /**
-     * onCrawl
+     * The name and signature of the console command.
      *
-     * @return void
+     * @var string
      */
-    public function onCrawl()
+    protected $signature = 'command:crawl-daily';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
     {
         $startTask = Carbon::now();
         $urlCrawl = $this->initUrl();
@@ -73,10 +63,7 @@ class CrawlController extends Controller
                     return $this->handleHasErrorJobs($historyId);
                 })
                 ->dispatch();
-            return back()->with(['message' => 'Crawl is processing!']);
         }
-
-        return back()->with(['message' => 'Not found urls for crawl!']);
     }
 
     /**
@@ -93,7 +80,7 @@ class CrawlController extends Controller
         $fileContent = Storage::get($errorFile);
         $errorUrls = explode("\n", $fileContent);
         foreach ($errorUrls as $key => $url) {
-            $jobs[] = new VerifyErrorUrlJob($url, $historyId, $key);
+            $jobs[] = (new VerifyErrorUrlJob($url, $historyId, $key))->delay(Carbon::now()->addMinutes(30));
         }
 
         if (count($jobs) > 0) {
@@ -140,34 +127,5 @@ class CrawlController extends Controller
         }
 
         CrawlHistory::where('id', $historyId)->update($dataUpdate);
-    }
-
-    /**
-     * onCrawlUrls
-     *
-     * @return void
-     */
-    public function onCrawlUrls()
-    {
-        $startTask = Carbon::now();
-
-        $urlCrawl = $this->initUrl();
-        $urlCrawl = array_slice($urlCrawl, 0, 5000);
-        $history = CrawlHistory::create([
-            'total_task'    => count($urlCrawl),
-            'started_date'  => $startTask
-        ]);
-        if (count($urlCrawl) > 0) {
-            foreach (array_chunk($urlCrawl, 10) as $urls) {
-                $jobs[] = new CrawlUrlJob($urls, $history->id);
-            }
-
-            Bus::batch($jobs)
-                ->name('Processing crawl data form url')
-                ->dispatch();
-            return back()->with(['message' => 'Crawl is processing!']);
-        }
-
-        return back()->with(['message' => 'Not found urls for crawl!']);
     }
 }
